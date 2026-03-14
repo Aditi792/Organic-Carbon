@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soil Organic Carbon Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="page-wrapper">
+
+  <header>
+    <div class="badge">🌱 Walkley-Black Method</div>
+    <h1>Soil <em>Organic Carbon</em><br>Calculator</h1>
+    <p class="subtitle">Determine the organic carbon content in your soil using the Walkley-Black wet oxidation method.</p>
+  </header>
+
+  <!-- Step tracker -->
+  <div class="steps-track">
+    <div class="step-dot active" id="dot-1"><span>1</span></div>
+    <div class="step-line" id="line-1"></div>
+    <div class="step-dot" id="dot-2"><span>2</span></div>
+    <div class="step-line" id="line-2"></div>
+    <div class="step-dot" id="dot-3"><span>3</span></div>
+  </div>
+
+  <!-- Step 1: Sample Info -->
+  <div class="card active" id="step-1">
+    <div class="card-title">Sample Information</div>
+    <p class="card-desc">Enter the name and composition details of your soil treatment or sample.</p>
+
+    <div class="form-row">
+      <label>Treatment / Soil Name</label>
+      <input type="text" id="soil-name" placeholder="e.g., Loamy soil – T1, Compost-amended plot..." />
+    </div>
+
+    <div class="form-row">
+      <label>Soil Composition / Notes <span style="opacity:0.5">(optional)</span></label>
+      <textarea id="soil-composition" placeholder="e.g., Sandy loam, 60% sand, 25% silt, 15% clay. Collected from 0–15 cm depth, field A..."></textarea>
+    </div>
+
+    <div id="err-step1" class="error-msg">Please enter at least a soil/treatment name.</div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goStep2()">
+        Continue &rarr;
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Titration values -->
+  <div class="card" id="step-2">
+    <div class="card-title">Titration Values</div>
+    <p class="card-desc">Enter the titre values from your Walkley-Black titration and the weight of your soil sample.</p>
+
+    <div class="formula-display">
+      <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;color:var(--text-mid)">Formula Used</div>
+      <div class="f-big">
+        OC (%) &nbsp;=&nbsp;
+        <span class="f-fraction">
+          <span>10(B − S)</span>
+          <span>B</span>
+        </span>
+        &nbsp;× 0.003 ×
+        <span class="f-fraction">
+          <span>100</span>
+          <span>wt. of sample (g)</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="inputs-grid">
+      <div class="input-box">
+        <label>B</label>
+        <div class="unit">Blank titre (mL)</div>
+        <input type="number" id="val-B" placeholder="0.00" step="0.01" min="0" />
+      </div>
+      <div class="input-box">
+        <label>S</label>
+        <div class="unit">Sample titre (mL)</div>
+        <input type="number" id="val-S" placeholder="0.00" step="0.01" min="0" />
+      </div>
+      <div class="input-box">
+        <label>W</label>
+        <div class="unit">Sample weight (g)</div>
+        <input type="number" id="val-W" placeholder="0.00" step="0.01" min="0" />
+      </div>
+    </div>
+
+    <div id="err-step2" class="error-msg"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep1()">&larr; Back</button>
+      <button class="btn btn-primary" onclick="calculate()">Calculate &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Result -->
+  <div class="result-card" id="step-3">
+
+    <div class="result-title">Result</div>
+
+    <div class="result-sample-info" id="result-info"></div>
+
+    <div class="result-big">
+      <div class="result-label">Organic Carbon Content</div>
+      <div class="result-value" id="result-oc">—</div>
+      <div class="result-unit">% (w/w)</div>
+    </div>
+
+    <div class="interpretation" id="interpretation"></div>
+
+    <div class="breakdown-grid">
+      <div class="breakdown-item">
+        <div class="bi-label">B (Blank)</div>
+        <div class="bi-val" id="res-B">—</div>
+        <div style="font-size:10px;color:var(--text-mid);font-family:'DM Mono',monospace;">mL</div>
+      </div>
+      <div class="breakdown-item">
+        <div class="bi-label">S (Sample)</div>
+        <div class="bi-val" id="res-S">—</div>
+        <div style="font-size:10px;color:var(--text-mid);font-family:'DM Mono',monospace;">mL</div>
+      </div>
+      <div class="breakdown-item">
+        <div class="bi-label">Weight</div>
+        <div class="bi-val" id="res-W">—</div>
+        <div style="font-size:10px;color:var(--text-mid);font-family:'DM Mono',monospace;">g</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep2()">&larr; Edit Values</button>
+      <button class="btn btn-green" onclick="addToHistory()">+ Save to History</button>
+      <button class="btn btn-primary" onclick="resetAll()">New Calculation</button>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="history-section" id="history-section">
+    <div class="history-title">Saved Results</div>
+    <div class="history-list" id="history-list"></div>
+  </div>
+
+</div>
+
+<script src="index.js"></script>
+</body>
+</html>

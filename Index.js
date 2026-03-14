@@ -1,0 +1,162 @@
+
+  const history = [];
+  let lastResult = null;
+
+  function setStep(n) {
+    document.querySelectorAll('.card, .result-card').forEach(c => c.classList.remove('active'));
+    const target = n === 3 ? document.getElementById('step-3') : document.getElementById('step-' + n);
+    target.classList.add('active');
+
+    // Update dots
+    for (let i = 1; i <= 3; i++) {
+      const dot = document.getElementById('dot-' + i);
+      dot.classList.remove('active', 'done');
+      if (i < n) dot.classList.add('done');
+      else if (i === n) dot.classList.add('active');
+    }
+    for (let i = 1; i <= 2; i++) {
+      const line = document.getElementById('line-' + i);
+      line.classList.toggle('done', i < n);
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function goStep1() {
+    document.getElementById('err-step1').classList.remove('show');
+    setStep(1);
+  }
+
+  function goStep2() {
+    const name = document.getElementById('soil-name').value.trim();
+    if (!name) {
+      document.getElementById('err-step1').classList.add('show');
+      return;
+    }
+    document.getElementById('err-step1').classList.remove('show');
+    setStep(2);
+  }
+
+  function calculate() {
+    const errEl = document.getElementById('err-step2');
+    const B = parseFloat(document.getElementById('val-B').value);
+    const S = parseFloat(document.getElementById('val-S').value);
+    const W = parseFloat(document.getElementById('val-W').value);
+
+    if (isNaN(B) || isNaN(S) || isNaN(W)) {
+      errEl.textContent = 'Please fill in all three values (B, S, and Weight).';
+      errEl.classList.add('show'); return;
+    }
+    if (B <= 0) {
+      errEl.textContent = 'B (blank titre) must be greater than 0.';
+      errEl.classList.add('show'); return;
+    }
+    if (S < 0 || W <= 0) {
+      errEl.textContent = 'S must be ≥ 0 and Weight must be > 0.';
+      errEl.classList.add('show'); return;
+    }
+    if (S > B) {
+      errEl.textContent = 'S (sample titre) cannot be greater than B (blank titre).';
+      errEl.classList.add('show'); return;
+    }
+    errEl.classList.remove('show');
+
+    const oc = (10 * (B - S) / B) * 0.003 * (100 / W);
+    const ocRounded = Math.round(oc * 10000) / 10000;
+
+    lastResult = {
+      name: document.getElementById('soil-name').value.trim(),
+      composition: document.getElementById('soil-composition').value.trim(),
+      B, S, W, oc: ocRounded,
+      time: new Date().toLocaleTimeString()
+    };
+
+    renderResult(lastResult);
+    setStep(3);
+  }
+
+  function renderResult(r) {
+    document.getElementById('result-oc').textContent = r.oc.toFixed(4);
+    document.getElementById('res-B').textContent = r.B;
+    document.getElementById('res-S').textContent = r.S;
+    document.getElementById('res-W').textContent = r.W;
+
+    // Sample info chips
+    const info = document.getElementById('result-info');
+    info.innerHTML = `
+      <div class="info-chip"><span>Sample</span>${r.name}</div>
+      ${r.composition ? `<div class="info-chip"><span>Composition</span>${r.composition}</div>` : ''}
+      <div class="info-chip"><span>Time</span>${r.time}</div>
+    `;
+
+    // Interpretation
+    const interp = document.getElementById('interpretation');
+    let color, bg, icon, level, msg;
+    if (r.oc < 1) {
+      color = '#e07070'; bg = 'rgba(180,50,50,0.12)'; icon = '⚠️';
+      level = 'Very Low';
+      msg = 'Organic carbon is critically low. Soil health and fertility are severely limited. Consider heavy organic matter amendments.';
+    } else if (r.oc < 2) {
+      color = '#e0a050'; bg = 'rgba(180,120,50,0.12)'; icon = '📉';
+      level = 'Low';
+      msg = 'Below optimal levels. Soil may benefit from compost or organic matter additions to improve structure and nutrient availability.';
+    } else if (r.oc < 3.5) {
+      color = '#8ec07c'; bg = 'rgba(74,124,89,0.12)'; icon = '✅';
+      level = 'Moderate — Good';
+      msg = 'Organic carbon is in a healthy range for most agricultural soils. Maintain with regular organic inputs.';
+    } else if (r.oc < 6) {
+      color = '#a9dc76'; bg = 'rgba(100,160,80,0.12)'; icon = '🌿';
+      level = 'High';
+      msg = 'Excellent organic carbon content. Indicates rich, biologically active soil with strong fertility and structure.';
+    } else {
+      color = '#5ec9b0'; bg = 'rgba(60,170,140,0.12)'; icon = '🌱';
+      level = 'Very High';
+      msg = 'Exceptionally high organic carbon — characteristic of peat soils or heavily amended plots. Verify sample is representative.';
+    }
+
+    interp.style.background = bg;
+    interp.style.borderLeftColor = color;
+    interp.innerHTML = `
+      <div class="interp-title" style="color:${color}">${icon} ${level} (${r.oc.toFixed(2)}%)</div>
+      <div class="interp-text" style="color:var(--text-light)">${msg}</div>
+    `;
+  }
+
+  function addToHistory() {
+    if (!lastResult) return;
+    history.unshift({ ...lastResult });
+    renderHistory();
+    document.getElementById('history-section').classList.add('has-items');
+
+    const btn = document.querySelector('[onclick="addToHistory()"]');
+    btn.textContent = '✓ Saved!';
+    btn.disabled = true;
+    setTimeout(() => { btn.innerHTML = '+ Save to History'; btn.disabled = false; }, 2000);
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('history-list');
+    list.innerHTML = history.map((h, i) => `
+      <div class="history-item">
+        <div>
+          <div class="hi-name">${h.name}</div>
+          ${h.composition ? `<div class="hi-vals" style="margin-top:3px;font-size:11px;">${h.composition.substring(0, 60)}${h.composition.length > 60 ? '…' : ''}</div>` : ''}
+          <div class="hi-vals" style="margin-top:5px;">B=${h.B} mL &nbsp;·&nbsp; S=${h.S} mL &nbsp;·&nbsp; W=${h.W} g &nbsp;·&nbsp; ${h.time}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="hi-result">${h.oc.toFixed(4)}</div>
+          <div class="hi-unit">% OC</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function resetAll() {
+    document.getElementById('soil-name').value = '';
+    document.getElementById('soil-composition').value = '';
+    document.getElementById('val-B').value = '';
+    document.getElementById('val-S').value = '';
+    document.getElementById('val-W').value = '';
+    lastResult = null;
+    setStep(1);
+  }
